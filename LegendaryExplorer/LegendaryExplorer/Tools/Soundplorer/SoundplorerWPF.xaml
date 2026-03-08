@@ -74,6 +74,9 @@
                     <MenuItem Header="_Save as" Command="SaveAs" InputGestureText="Ctrl+Shift+S" IsEnabled="{Binding Pcc, Converter={StaticResource NullEnabledConverter}}"/>
 
                     <Separator/>
+                    <MenuItem Header="Export All Dubbing Files" Click="ExportAllDubbingFiles_Click"/>
+                    <Separator/>
+
                     <MenuItem Name="Recents_MenuItem" Header="Recent" IsEnabled="false"/>
                 </MenuItem>
                 <MenuItem Header="_Wwise" Padding="4">

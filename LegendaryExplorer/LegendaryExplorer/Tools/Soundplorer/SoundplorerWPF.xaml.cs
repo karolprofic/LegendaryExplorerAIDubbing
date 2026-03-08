@@ -1,4 +1,25 @@
-﻿using Microsoft.Win32;
+﻿using FontAwesome5;
+using LegendaryExplorer.Audio;
+using LegendaryExplorer.Dialogs;
+using LegendaryExplorer.Misc;
+using LegendaryExplorer.Misc.AppSettings;
+using LegendaryExplorer.SharedUI;
+using LegendaryExplorer.SharedUI.Bases;
+using LegendaryExplorer.SharedUI.Interfaces;
+using LegendaryExplorer.UnrealExtensions;
+using LegendaryExplorer.UnrealExtensions.Classes;
+using LegendaryExplorer.UserControls.ExportLoaderControls;
+using LegendaryExplorer.UserControls.SharedToolControls;
+using LegendaryExplorerCore.Audio;
+using LegendaryExplorerCore.Gammtek.Extensions.Collections.Generic;
+using LegendaryExplorerCore.Gammtek.IO;
+using LegendaryExplorerCore.Helpers;
+using LegendaryExplorerCore.Misc;
+using LegendaryExplorerCore.Packages;
+using LegendaryExplorerCore.Packages.CloningImportingAndRelinking;
+using LegendaryExplorerCore.Sound.ISACT;
+using LegendaryExplorerCore.Unreal.BinaryConverters;
+using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -11,27 +32,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
-using FontAwesome5;
-using LegendaryExplorer.Audio;
-using LegendaryExplorer.Dialogs;
-using LegendaryExplorer.Misc;
-using LegendaryExplorer.SharedUI;
-using LegendaryExplorer.SharedUI.Bases;
-using LegendaryExplorer.SharedUI.Interfaces;
-using LegendaryExplorer.Misc.AppSettings;
-using LegendaryExplorer.UnrealExtensions;
-using LegendaryExplorer.UnrealExtensions.Classes;
-using LegendaryExplorer.UserControls.ExportLoaderControls;
-using LegendaryExplorer.UserControls.SharedToolControls;
-using LegendaryExplorerCore.Gammtek.IO;
-using LegendaryExplorerCore.Packages;
-using LegendaryExplorerCore.Unreal.BinaryConverters;
-using LegendaryExplorerCore.Helpers;
-using LegendaryExplorerCore.Misc;
-using LegendaryExplorerCore.Audio;
-using LegendaryExplorerCore.Gammtek.Extensions.Collections.Generic;
-using LegendaryExplorerCore.Packages.CloningImportingAndRelinking;
-using LegendaryExplorerCore.Sound.ISACT;
+using TerraFX.Interop.Windows;
 using AudioStreamHelper = LegendaryExplorer.UnrealExtensions.AudioStreamHelper;
 using WwiseStream = LegendaryExplorerCore.Unreal.BinaryConverters.WwiseStream;
 
@@ -111,6 +112,122 @@ namespace LegendaryExplorer.Tools.Soundplorer
                     MessageBox.Show("Unable to open file:\n" + ex.Message);
                 }
             }
+        }
+
+        private void ExportAllDubbingFiles_Click(object sender, RoutedEventArgs e)
+        {
+            ExportAllDubbingFiles();
+        }
+
+        // Function to ask the user to select the output folder
+        private string ExportAllDubbingFiles_SelectOutputFolder()
+        {
+            var dlg = new CommonOpenFileDialog("Select output folder for extracted audio")
+            {
+                IsFolderPicker = true
+            };
+
+            if (dlg.ShowDialog(this) != CommonFileDialogResult.Ok)
+                return null; // User cancelled the dialog
+
+            string outputFolder = dlg.FileName;
+
+            // Ensure the output folder exists
+            if (!Directory.Exists(outputFolder))
+                Directory.CreateDirectory(outputFolder);
+
+            return outputFolder;
+        }
+
+        // Function to ask the user for the base game folder and collect *_LOC_INT.pcc files recursively
+        private string[] ExportAllDubbingFiles_CollectDubbingFiles()
+        {
+            // Ask the user to select the base game folder
+            var dlgBase = new CommonOpenFileDialog("Select base game folder to search for *_LOC_INT.pcc files")
+            {
+                IsFolderPicker = true
+            };
+
+            if (dlgBase.ShowDialog(this) != CommonFileDialogResult.Ok)
+                return null; // User cancelled the dialog
+
+            string baseFolder = dlgBase.FileName;
+
+            // Search recursively for all *_LOC_INT.pcc files
+            string[] filePaths;
+            try
+            {
+                filePaths = Directory.GetFiles(baseFolder, "*_LOC_INT.pcc", SearchOption.AllDirectories);
+
+                if (filePaths.Length == 0)
+                {
+                    MessageBox.Show("No *_LOC_INT.pcc files found in the selected folder.");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error searching for files:\n{ex.Message}");
+                return null;
+            }
+
+            return filePaths;
+        }
+
+        // Function to process a single file (load + extract audio)
+        private void ExportAllDubbingFiles_ProcessSingleFile(string file, string outputFolder)
+        {
+            // Check if the file exists
+            if (!File.Exists(file))
+            {
+                MessageBox.Show($"File not found: {file}");
+                return;
+            }
+
+            // Load the file
+            LoadFile(file);
+
+            // Wait for background parsing to finish
+            while (backgroundScanner != null && backgroundScanner.IsBusy)
+            {
+                System.Threading.Thread.Sleep(200);
+                System.Windows.Forms.Application.DoEvents();
+            }
+
+            // Extract all audio from the loaded file
+            ExtractAllAudioToFolder(outputFolder, true);
+
+            // Wait until extraction is done
+            while (IsBusy)
+            {
+                System.Threading.Thread.Sleep(200);
+                System.Windows.Forms.Application.DoEvents();
+            }
+        }
+
+        public void ExportAllDubbingFiles()
+        {
+            string outputFolder = ExportAllDubbingFiles_SelectOutputFolder();
+            if (outputFolder == null)
+                return;
+
+            string[] filePaths = ExportAllDubbingFiles_CollectDubbingFiles();
+            if (filePaths == null || filePaths.Length == 0)
+                return;
+
+            foreach (string file in filePaths)
+            {
+                try
+                {
+                    ExportAllDubbingFiles_ProcessSingleFile(file, outputFolder);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error processing file:\n{file}\n\n{ex.Message}");
+                    continue;
+                }
+            }
+            MessageBox.Show("All files loaded and audio extracted.");
         }
 
         public void LoadFile(string fileName)
@@ -890,18 +1007,18 @@ namespace LegendaryExplorer.Tools.Soundplorer
             swpd.ShowDialog();
         }
 
-        private void ExtractAllAudio_Clicked(object sender, RoutedEventArgs e)
+        public void ExtractAllAudioToFolder(string outputFolder, bool skipMessageBox = false)
         {
-            var dlg = new CommonOpenFileDialog("Select output folder")
+            if (string.IsNullOrWhiteSpace(outputFolder))
             {
-                IsFolderPicker = true
-            };
-
-            if (dlg.ShowDialog(this) != CommonFileDialogResult.Ok)
-            {
+                MessageBox.Show("No output folder specified.");
                 return;
             }
-            var location = dlg.FileName;
+
+            if (!Directory.Exists(outputFolder))
+            {
+                Directory.CreateDirectory(outputFolder);
+            }
 
             IsBusy = true;
             BusyText = "Extracting audio";
@@ -915,18 +1032,18 @@ namespace LegendaryExplorer.Tools.Soundplorer
                     {
                         case SoundplorerExport sp when sp.Export.ClassName == "WwiseStream":
                             {
-                                string outfile = Path.Combine(location, sp.Export.ObjectName + ".wav");
+                                string outfile = Path.Combine(outputFolder, sp.Export.ObjectName + ".wav");
                                 ExportWave(sp, outfile);
                                 break;
                             }
                         case SoundplorerExport sp when sp.Export.ClassName == "WwiseBank":
                             {
-                                ExtractBankToWav(sp, location);
+                                ExtractBankToWav(sp, outputFolder);
                                 break;
                             }
                         case ISACTFileEntry ife:
                             {
-                                string outfile = Path.Combine(location, Path.GetFileNameWithoutExtension(ife.Entry.TitleInfo.Value) + ".wav");
+                                string outfile = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(ife.Entry.TitleInfo.Value) + ".wav");
                                 MemoryStream ms = AudioStreamHelper.GetWaveStreamFromISBEntry(ife.Entry);
                                 File.WriteAllBytes(outfile, ms.ToArray());
                                 break;
@@ -934,7 +1051,7 @@ namespace LegendaryExplorer.Tools.Soundplorer
                         case AFCFileEntry afE:
                             {
                                 string presetfilename = $"{Path.GetFileNameWithoutExtension(afE.AFCPath)}_{afE.Offset}.wav";
-                                ExportWaveAFC(afE, Path.Combine(location, presetfilename));
+                                ExportWaveAFC(afE, Path.Combine(outputFolder, presetfilename));
                                 break;
                             }
                     }
@@ -943,9 +1060,25 @@ namespace LegendaryExplorer.Tools.Soundplorer
             exportWorker.RunWorkerCompleted += delegate
             {
                 IsBusy = false;
-                MessageBox.Show("Done.");
+                if (!skipMessageBox)
+                {
+                    MessageBox.Show("Done.");
+                }
             };
             exportWorker.RunWorkerAsync();
+        }
+
+        private void ExtractAllAudio_Clicked(object sender, RoutedEventArgs e)
+        {
+            var dlg = new CommonOpenFileDialog("Select output folder")
+            {
+                IsFolderPicker = true
+            };
+
+            if (dlg.ShowDialog(this) != CommonFileDialogResult.Ok)
+                return;
+
+            ExtractAllAudioToFolder(dlg.FileName);
         }
 
         private async void ReplaceAudioFromWav_Clicked(object sender, RoutedEventArgs e)
