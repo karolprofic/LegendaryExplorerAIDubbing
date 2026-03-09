@@ -27,6 +27,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -119,75 +120,78 @@ namespace LegendaryExplorer.Tools.Soundplorer
             ExportAllDubbingFiles();
         }
 
-        // Function to ask the user to select the output folder
-        private string ExportAllDubbingFiles_SelectOutputFolder()
+        /// <summary>
+        /// Prompts the user to select an output folder for extracted audio files.
+        /// Ensures the folder exists.
+        /// </summary>
+        /// <returns>Path to the output folder, or null if the user cancels.</returns>
+        private string SelectOutputFolder()
         {
-            var dlg = new CommonOpenFileDialog("Select output folder for extracted audio")
+            var dialog = new CommonOpenFileDialog("Select output folder for extracted audio")
             {
                 IsFolderPicker = true
             };
 
-            if (dlg.ShowDialog(this) != CommonFileDialogResult.Ok)
-                return null; // User cancelled the dialog
+            if (dialog.ShowDialog(this) != CommonFileDialogResult.Ok)
+                return null; // User cancelled
 
-            string outputFolder = dlg.FileName;
+            string outputFolder = dialog.FileName;
 
-            // Ensure the output folder exists
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
 
             return outputFolder;
         }
 
-        // Function to ask the user for the base game folder and collect *_LOC_INT.pcc files recursively
-        private string[] ExportAllDubbingFiles_CollectDubbingFiles()
+        /// <summary>
+        /// Prompts the user to select the base game folder and collects all *_LOC_INT.pcc files recursively.
+        /// </summary>
+        /// <returns>Array of file paths, or null if none found or user cancels.</returns>
+        private string[] CollectDubbingFiles()
         {
-            // Ask the user to select the base game folder
-            var dlgBase = new CommonOpenFileDialog("Select base game folder to search for *_LOC_INT.pcc files")
+            var dialog = new CommonOpenFileDialog("Select base game folder to search for *_LOC_INT.pcc files")
             {
                 IsFolderPicker = true
             };
 
-            if (dlgBase.ShowDialog(this) != CommonFileDialogResult.Ok)
-                return null; // User cancelled the dialog
+            if (dialog.ShowDialog(this) != CommonFileDialogResult.Ok)
+                return null; // User cancelled
 
-            string baseFolder = dlgBase.FileName;
+            string baseFolder = dialog.FileName;
 
-            // Search recursively for all *_LOC_INT.pcc files
-            string[] filePaths;
             try
             {
-                filePaths = Directory.GetFiles(baseFolder, "*_LOC_INT.pcc", SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(baseFolder, "*_LOC_INT.pcc", SearchOption.AllDirectories);
 
-                if (filePaths.Length == 0)
+                if (files.Length == 0)
                 {
                     MessageBox.Show("No *_LOC_INT.pcc files found in the selected folder.");
                     return null;
                 }
+
+                return files;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error searching for files:\n{ex.Message}");
                 return null;
             }
-
-            return filePaths;
         }
 
-        // Function to process a single file (load + extract audio)
-        private void ExportAllDubbingFiles_ProcessSingleFile(string file, string outputFolder)
+        /// <summary>
+        /// Processes a single *_LOC_INT.pcc file by loading and extracting all audio to the specified output folder.
+        /// </summary>
+        private void ProcessFile(string filePath, string outputFolder)
         {
-            // Check if the file exists
-            if (!File.Exists(file))
+            if (!File.Exists(filePath))
             {
-                MessageBox.Show($"File not found: {file}");
+                MessageBox.Show($"File not found: {filePath}");
                 return;
             }
 
-            // Load the file
-            LoadFile(file);
+            LoadFile(filePath);
 
-            // Wait for background parsing to finish
+            // Wait until loading is done
             while (backgroundScanner != null && backgroundScanner.IsBusy)
             {
                 System.Threading.Thread.Sleep(200);
@@ -205,29 +209,33 @@ namespace LegendaryExplorer.Tools.Soundplorer
             }
         }
 
+        /// <summary>
+        /// Main function to export all dubbing files.
+        /// Guides the user through selecting folders, collects files, and processes them one by one.
+        /// </summary>
         public void ExportAllDubbingFiles()
         {
-            string outputFolder = ExportAllDubbingFiles_SelectOutputFolder();
-            if (outputFolder == null)
+            string outputFolder = SelectOutputFolder();
+            if (string.IsNullOrEmpty(outputFolder))
                 return;
 
-            string[] filePaths = ExportAllDubbingFiles_CollectDubbingFiles();
-            if (filePaths == null || filePaths.Length == 0)
+            string[] files = CollectDubbingFiles();
+            if (files == null || files.Length == 0)
                 return;
 
-            foreach (string file in filePaths)
+            foreach (string file in files)
             {
                 try
                 {
-                    ExportAllDubbingFiles_ProcessSingleFile(file, outputFolder);
+                    ProcessFile(file, outputFolder);
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Error processing file:\n{file}\n\n{ex.Message}");
-                    continue;
                 }
             }
-            MessageBox.Show("All files loaded and audio extracted.");
+
+            MessageBox.Show("All audio files exported.");
         }
 
         public void LoadFile(string fileName)
