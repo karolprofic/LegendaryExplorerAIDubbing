@@ -118,7 +118,17 @@ namespace LegendaryExplorer.Tools.Soundplorer
 
         private void ImportAllDubbingFiles_Click(object sender, RoutedEventArgs e)
         {
-
+            // 1. Collect all files
+            // 2. Select the folder with the new dubbing
+            // 3. Iterate through the files
+            // 4. Iterate through the items in each file
+            // 5. Replace files if they exist in the new language folder
+            // 6. Save file go to another
+            foreach (SoundplorerExport export in SoundExports_ListBox.Items)
+            {
+                ExportEntry replaceExport = export.Export;
+                Debug.WriteLine(replaceExport.FullPath);
+            }
         }
 
         private void ExportAllDubbingFiles_Click(object sender, RoutedEventArgs e)
