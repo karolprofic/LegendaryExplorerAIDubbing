@@ -75,6 +75,7 @@
 
                     <Separator/>
                     <MenuItem Header="Export All Dubbing Files" Click="ExportAllDubbingFiles_Click"/>
+                    <MenuItem Header="Import All Dubbing Files" Click="ImportAllDubbingFiles_Click"/>
                     <Separator/>
 
                     <MenuItem Name="Recents_MenuItem" Header="Recent" IsEnabled="false"/>

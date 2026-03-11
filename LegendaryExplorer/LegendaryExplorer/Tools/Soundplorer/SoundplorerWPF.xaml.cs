@@ -27,6 +27,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -113,6 +114,11 @@ namespace LegendaryExplorer.Tools.Soundplorer
                     MessageBox.Show("Unable to open file:\n" + ex.Message);
                 }
             }
+        }
+
+        private void ImportAllDubbingFiles_Click(object sender, RoutedEventArgs e)
+        {
+
         }
 
         private void ExportAllDubbingFiles_Click(object sender, RoutedEventArgs e)
@@ -223,19 +229,48 @@ namespace LegendaryExplorer.Tools.Soundplorer
             if (files == null || files.Length == 0)
                 return;
 
+            List<string> successFiles = new List<string>();
+            List<string> errorFiles = new List<string>();
+
             foreach (string file in files)
             {
                 try
                 {
                     ProcessFile(file, outputFolder);
+                    successFiles.Add(file);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error processing file:\n{file}\n\n{ex.Message}");
+                    errorFiles.Add($"{file} | {ex.Message}");
                 }
             }
 
+            SaveReport(outputFolder, successFiles, errorFiles);
+
             MessageBox.Show("All audio files exported.");
+        }
+
+        private void SaveReport(string outputFolder, List<string> successFiles, List<string> errorFiles)
+        {
+            StringBuilder report = new StringBuilder();
+
+            report.AppendLine("Dubbing Export Report");
+            report.AppendLine($"Date: {DateTime.Now}");
+            report.AppendLine($"Successful: {successFiles.Count}");
+            report.AppendLine($"Failed: {errorFiles.Count}");
+            report.AppendLine();
+
+            report.AppendLine("=== Successful files ===");
+            foreach (var file in successFiles)
+                report.AppendLine(file);
+
+            report.AppendLine();
+            report.AppendLine("=== Failed files ===");
+            foreach (var file in errorFiles)
+                report.AppendLine(file);
+
+            string reportPath = Path.Combine(outputFolder, "export_report.txt");
+            File.WriteAllText(reportPath, report.ToString());
         }
 
         public void LoadFile(string fileName)
