@@ -1,3 +1,19 @@
+# Legendary Explorer - Polish Dubbing Fork
+
+This fork of **Legendary Explorer** has been modified to support the creation of Polish dubbing for **Mass Effect 3**. The Export and Import operations may take a long time.
+
+## Added Features in Sound Explorer
+
+- **Export All Dubbing Files** – exports all audio files from `*_LOC_INT.pcc` files.  
+    - Dialogue files start with `en-us`, other files should be removed.  
+
+- **Import All Dubbing Files** – replaces audio files from the specified folder into `*_LOC_INT.pcc` files.  
+    - For the replacement to work, the audio file must have the same name as during export.  
+
+- **Python Folder** – contains useful scripts to assist with dubbing work.
+
+----
+
 [![Download latest release](https://user-images.githubusercontent.com/8151477/124207604-d99edb80-dab3-11eb-9411-f71b499b254a.png)](https://github.com/ME3Tweaks/LegendaryExplorer/releases/latest)
 
 [![Build Status](https://dev.azure.com/ME3Tweaks/ME3Explorer/_apis/build/status/ME3Tweaks.LegendaryExplorer?branchName=Beta)](https://dev.azure.com/ME3Tweaks/LegendaryExplorer/_build/latest?definitionId=6&branchName=Beta)
