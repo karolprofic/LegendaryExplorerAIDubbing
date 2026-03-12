@@ -242,8 +242,12 @@ namespace LegendaryExplorer.Tools.Soundplorer
             List<string> successFiles = new List<string>();
             List<string> errorFiles = new List<string>();
 
+            int total = files.Length;
+            int current = 0;
             foreach (string file in files)
             {
+                current++;
+                Debug.WriteLine($"[{current}/{total}] Processing: {file}");
                 try
                 {
                     ProcessFile(file, outputFolder);
