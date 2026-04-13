@@ -5,7 +5,7 @@ from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 model = ChatterboxMultilingualTTS.from_pretrained(device="cpu")
 
 liara_txt = "To może być ten artefakt, ale bez badaczek ciężko jest to stwierdzić."
-liara_path = "C:/Users/Karol/Desktop/LegendaryExplorerAIDubbing\Python\me3_generated\original_liara_pl_me1.wav"
+liara_path = "/me3_generated/original_liara_pl_me1.wav"
 
 wav_liara = model.generate(
     text=liara_txt,
