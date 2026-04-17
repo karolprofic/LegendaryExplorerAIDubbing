@@ -11,3 +11,5 @@ tts.tts_to_file(text=liara_txt,
                 file_path=out_path,
                 speaker_wav=liara_path,
                 language="pl")
+
+# TODO: Use upscaler for better quality https://github.com/ysharma3501/NovaSR
