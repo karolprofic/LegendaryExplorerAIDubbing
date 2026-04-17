@@ -32,7 +32,7 @@ def build_hash_db(folder, output_file):
     print(f"\nSaved hashes for {len(db)} files → {output_file}")
 
 
-# TODO: Not tested - be careful 
+# TODO: Not tested - be careful
 def compare_hashes(folder, hash_file):
     with open(hash_file, "r", encoding="utf-8") as f:
         old_db = json.load(f)
